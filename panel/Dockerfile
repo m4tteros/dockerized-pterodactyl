@@ -8,8 +8,9 @@ ARG USE_NGINX=false
 ENV TZ=${APP_TIMEZONE}
 ENV USE_NGINX=${USE_NGINX}
 
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
+# Use apk instead of apt-get (Alpine base)
+RUN apk update && \
+    apk add --no-cache \
         curl \
         vim \
         tzdata \
@@ -18,16 +19,16 @@ RUN apt-get update && \
         unzip \
         supervisor && \
     if [ "$USE_NGINX" = "true" ]; then \
-        apt-get install -y nginx; \
-    fi && \
-    rm -rf /var/lib/apt/lists/*
+        apk add --no-cache nginx; \
+    fi
 
 RUN ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezone
 
 WORKDIR /app
 RUN mkdir -p /app/storage/logs /app/var /run/php && \
-    chown -R www-data:www-data /app
+    chown -R www-data:www-data /app || true
 
+# These may fail on clean builds, so ignore errors
 RUN php artisan config:clear || true && \
     php artisan cache:clear || true && \
     php artisan view:clear || true
